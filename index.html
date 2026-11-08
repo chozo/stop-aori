@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <title>STOP! あおり運転</title>
+    <meta name="description" content="東名高速を東京ICから名古屋ICへ。あおってきた車だけをミサイルで撃退する3Dドライブゲーム。" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="STOP! あおり運転" />
+    <meta property="og:title" content="STOP! あおり運転" />
+    <meta property="og:description" content="東名高速を東京ICから名古屋ICへ。あおってきた車だけをミサイルで撃退する3Dドライブゲーム。" />
+    <meta property="og:url" content="https://game.chozo.net/stop-aori/" />
+    <meta property="og:image" content="https://game.chozo.net/stop-aori/ogp.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="高速道路で前に割り込んだあおり車をミサイルで撃退した瞬間と、タイトル「STOP! あおり運転」" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#0b1d33" />
+  </head>
+  <body>
+    <div id="app">
+      <div id="game">
+        <canvas id="view"></canvas>
+
+        <div id="hud" hidden>
+          <div id="top">
+            <div class="panel info">
+              <div class="dest">名古屋ICまで <b id="km">325.5</b><small>km</small></div>
+              <div class="bar"><i id="prog"></i></div>
+              <div class="next">次は <b id="nextIc">東名川崎</b> IC</div>
+            </div>
+            <div id="rearview">
+              <span class="label">後方</span>
+              <div id="warn">▼ 後方から接近 ▼</div>
+            </div>
+            <div class="panel stat">
+              <div class="speed"><b id="speed">100</b><small>km/h</small></div>
+              <div class="kills">撃退 <b id="kills">0</b></div>
+              <div class="lives"><span>ミス</span><span id="lives"></span></div>
+            </div>
+            <div class="sys">
+              <button id="fsBtn" class="icon-btn" aria-label="全画面" hidden>⛶</button>
+              <button id="mute" class="icon-btn" aria-label="音のオン・オフ">🔊</button>
+              <button id="pause" class="icon-btn" aria-label="一時停止">Ⅱ</button>
+            </div>
+          </div>
+          <div id="center">
+            <div id="banner"></div>
+            <div id="toasts"></div>
+          </div>
+          <div id="flash"></div>
+          <div id="boom"></div>
+
+          <div id="keys" class="keys">
+            <span><kbd>←</kbd><kbd>→</kbd> 車線変更</span>
+            <span><kbd>↑</kbd><kbd>↓</kbd> 加速・減速</span>
+            <span class="gauge" id="gF"><kbd>Z</kbd> 前ミサイル<i></i></span>
+            <span class="gauge" id="gR"><kbd>X</kbd> 後ミサイル<i></i></span>
+          </div>
+
+          <div id="touch">
+            <div class="cluster left">
+              <div class="speedbtns">
+                <button data-act="brake" class="small" aria-label="減速">減速</button>
+                <button data-act="accel" class="small" aria-label="加速">加速</button>
+              </div>
+              <div class="lanebtns">
+                <button data-act="left" class="lane" aria-label="左の車線へ">◀</button>
+                <button data-act="right" class="lane" aria-label="右の車線へ">▶</button>
+              </div>
+            </div>
+            <div class="cluster right">
+              <button data-act="fireR" class="fire rear" aria-label="後ろへミサイル"><span>後ろへ</span>発射<i></i></button>
+              <button data-act="fireF" class="fire front" aria-label="前へミサイル"><span>前へ</span>発射<i></i></button>
+            </div>
+          </div>
+        </div>
+
+        <section id="title" class="screen">
+          <div class="card">
+            <p class="kicker">東名高速 東京IC → 名古屋IC</p>
+            <h1><span class="stop">STOP!</span><span class="name">あおり運転</span></h1>
+            <ul class="rules">
+              <li><b>あおってきた車だけ</b>をミサイルで撃退</li>
+              <li>あおる前に撃つ・一般車に当てる・ぶつかる ＝ <b>ミス</b></li>
+              <li>ミス<b>累計3回</b>でゲームオーバー。<b>覆面パトカー</b>はミス2</li>
+              <li>ミサイルはまっすぐ飛ぶ。離れて撃つと<b>蛇行</b>やかわす動きで外れ、その先の車に当たる。引きつけて撃て</li>
+            </ul>
+            <p class="how pc">←→ 車線変更 ／ ↑↓ 加速・減速 ／ Z 前へ発射 ／ X 後ろへ発射</p>
+            <p class="how sp">左下の ◀▶ で車線変更、右下でミサイル発射</p>
+            <div class="row">
+              <button id="startBtn" class="primary">出発する</button>
+              <button id="fsStart" hidden>全画面で遊ぶ</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="result" class="screen" hidden>
+          <div class="card">
+            <p class="kicker" id="rKicker">名古屋IC 到着</p>
+            <h2 id="rTitle">クリア！</h2>
+            <p id="rReason"></p>
+            <dl class="stats">
+              <div><dt>撃退</dt><dd id="rKills">0</dd></div>
+              <div><dt>ミス</dt><dd id="rMiss">0</dd></div>
+              <div><dt>タイム</dt><dd id="rTime">0</dd></div>
+              <div><dt>走った距離</dt><dd id="rDist">0</dd></div>
+            </dl>
+            <p class="score">スコア <b id="rScore">0</b> <span id="rRank"></span></p>
+            <div class="row">
+              <button id="retryBtn" class="primary">もう一度</button>
+              <button id="titleBtn">タイトルへ</button>
+            </div>
+          </div>
+        </section>
+
+        <div id="paused" class="screen" hidden>
+          <div class="card small"><h2>一時停止中</h2><button id="resumeBtn" class="primary">つづける</button></div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
