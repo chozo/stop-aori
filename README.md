@@ -99,7 +99,7 @@ src/
 tests/        単体テストと自動プレイ（bot.ts）
 tools/e2e.mjs ブラウザでの確認
 tools/ogp/    OGP画像を作るスクリプト
-public/       favicon.svg と ogp.png（1200×630）
+public/       favicon.svg（赤い丸に「STOP!」）と ogp.png（1200×630）
 ```
 
 画像・音のファイルは使っていない（すべてコードで作っている）。
