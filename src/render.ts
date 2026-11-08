@@ -138,12 +138,12 @@ export class Renderer {
     const a = w / h;
     this.camera.aspect = a;
     if (a < 1) {
-      // 縦向き: 高く・後ろから見下ろし、3車線と後ろの車が入るようにする
+      // 縦向き: 3車線と真後ろの車が入る高さにしつつ、地平線が上のパネルに隠れないよう低めにして先を見る
       this.camera.fov = 66;
-      this.cam = { height: 12, back: 21, ahead: 9 };
+      this.cam = { height: 8.5, back: 18, ahead: 18 };
     } else {
       this.camera.fov = a > 1.9 ? 48 : 55;
-      this.cam = { height: 8.6, back: 19, ahead: 15 };
+      this.cam = { height: 7.2, back: 17, ahead: 20 };
     }
     this.camera.updateProjectionMatrix();
     const r = this.rearRect;
