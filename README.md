@@ -80,7 +80,7 @@ npm run deploy     # ビルドして Cloudflare Workers に公開
 
 Cloudflare Workers（静的アセット）で `https://game.chozo.net/stop-aori/` に公開している。`wrangler.jsonc` で `game.chozo.net/stop-aori` と `game.chozo.net/stop-aori/*` のルートだけを受け持つ（workers.dev は使わない）。ビルドは `dist/stop-aori/` に出力され、`public/` の `favicon.svg` と `ogp.png` もそこにコピーされる。
 
-OGP画像は `tools/ogp/make-ogp.mjs` で、前に割り込んだあおり車を前方ミサイルで撃った直後の場面を撮り、タイトルと遊び方を重ねて作る。爆発の粒は毎回少し違う形になる。
+OGP画像は `tools/ogp/make-ogp.mjs` で、前に割り込んだ赤いあおり車に前方ミサイルが当たって吹き飛ぶ瞬間を撮り（吹き出しは消す）、タイトルと遊び方を重ねて作る。爆発の粒は毎回少し違う形になる。
 
 ### ファイル構成
 
