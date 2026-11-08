@@ -2,3 +2,4 @@ node_modules/
 dist/
 .wrangler/
 tools/out/
+tools/promo/bgm.wav

@@ -75,7 +75,34 @@ npm run build      # 型チェック + dist/stop-aori/ に出力
 npm run e2e        # ビルド済みのものをヘッドレスChromeで確認（PC 1280×720、スマホ縦 390×844・横 844×390・小 360×640）。画面は tools/out/ に保存
 npm run ogp        # OGP画像 public/ogp.png を作り直す（npm run dev を別に起動しておく）
 npm run deploy     # ビルドして Cloudflare Workers に公開
+npm run promo      # 告知動画（縦型 1080×1920・約30秒）を作る
 ```
+
+## 告知動画
+
+`npm run promo` で、ビルドしたゲームをヘッドレスの Chrome で1コマずつ撮り、字幕・効果文字・合成のリズムと効果音を重ねて MP4 にする。
+
+- 出力はアプリのフォルダの隣の `../video/`（リポジトリには含めない）
+  - `stop-aori-promo.mp4`（本編）
+  - `stop-aori-promo-cover.jpg`（表紙）
+  - `stop-aori-promo-sheet.jpg`（2秒おきの一覧）
+  - 途中のファイルは `../video/work/`
+- 構成は台本 `tools/promo/scenario.js` に書いてある
+  1. 割り込み車をスローで撃破
+  2. タイトル
+  3. 後ろからのパッシング → 後ろへ撃つ
+  4. 割り込み急ブレーキ
+  5. 前で蛇行 → 重なった瞬間に撃つ
+  6. 一般車に当てるとミス
+  7. ×2早送りの連続撃退
+  8. 名古屋IC 到着
+  9. エンドカード
+- 場面は `window.__game.world()` であおり車を置いて作る。結果画面のランクは映さない
+- 見た目は `tools/promo/promo.css`、タイトルのロゴは `tools/promo/logo.svg`
+- `PROMO_EVERY=15 npm run promo` … 15コマおきに撮って構成だけ確認する（`../video/stop-aori-promo-preview.jpg`）
+- `PROMO_ENCODE_ONLY=1 npm run promo` … 撮り直さずに音と書き出しだけやり直す
+- 撮影用に、`?promo=1` のときは `__game.step(秒)` が秒で進む。効果音は `__game.audio` の `capture` / `drain` / `render` で記録して書き出す
+- BGM は `tools/promo/make-bgm.mjs` で一から合成したポップな曲（明るい長調 C→G→Am→F、BPM156。跳ねるベース・裏拍の和音・メロディ・手拍子・グロッケン）。`npm run promo` のたびに `tools/promo/bgm.wav` を作り直す。外部の音源は使っていない（撮影ツール既定の合成リズムは使わない）。BGM は効果音の邪魔をしないよう、効果音より約14dB小さくしている（`volume: 0.16`）
 
 ## 公開
 
@@ -100,6 +127,7 @@ src/
 tests/        単体テストと自動プレイ（bot.ts）
 tools/e2e.mjs ブラウザでの確認
 tools/ogp/    OGP画像を作るスクリプト
+tools/promo/  告知動画の撮影・書き出し（台本は scenario.js）
 public/       favicon.svg（赤い丸に「STOP!」）と ogp.png（1200×630）
 ```
 

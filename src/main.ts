@@ -31,6 +31,7 @@ let acc = 0;
 let last = performance.now();
 let resultTimer = -1;
 const eventLog: GameEvent[] = [];
+const PROMO = new URLSearchParams(location.search).has('promo');
 
 const rearEl = $('rearview');
 function resize(): void {
@@ -166,6 +167,24 @@ function showResult(): void {
 }
 
 // ---- 表示 ----
+// 表示を消すまでの時間は、描画のたびに進む時計で数える（告知動画を1コマずつ撮っても同じ間になる）
+const uiTimers: { t: number; fn: () => void }[] = [];
+function after(sec: number, fn: () => void): { t: number; fn: () => void } {
+  const timer = { t: sec, fn };
+  uiTimers.push(timer);
+  return timer;
+}
+function tickUi(dt: number): void {
+  for (let i = uiTimers.length - 1; i >= 0; i--) {
+    const timer = uiTimers[i];
+    timer.t -= dt;
+    if (timer.t <= 0) {
+      uiTimers.splice(i, 1);
+      timer.fn();
+    }
+  }
+}
+
 function toast(text: string, kind: 'good' | 'bad' | 'warn' | 'info' | 'aori'): void {
   const box = $('toasts');
   const el = document.createElement('div');
@@ -173,16 +192,16 @@ function toast(text: string, kind: 'good' | 'bad' | 'warn' | 'info' | 'aori'): v
   el.textContent = text;
   box.appendChild(el);
   while (box.children.length > 3) box.firstElementChild?.remove();
-  setTimeout(() => el.remove(), 1700);
+  after(1.7, () => el.remove());
 }
 
-let bannerTimer = 0;
+let bannerTimer: { t: number; fn: () => void } | null = null;
 function banner(text: string): void {
   const b = $('banner');
   b.textContent = text;
   b.classList.add('show');
-  clearTimeout(bannerTimer);
-  bannerTimer = window.setTimeout(() => b.classList.remove('show'), 1800);
+  if (bannerTimer) bannerTimer.fn = () => {};
+  bannerTimer = after(1.8, () => b.classList.remove('show'));
 }
 
 // 命中の瞬間、時間を一瞬ゆっくりにする（ヒットストップ）
@@ -190,13 +209,13 @@ let hitStop = 0;
 function boomFlash(): void {
   const f = $('boom');
   f.classList.add('on');
-  requestAnimationFrame(() => requestAnimationFrame(() => f.classList.remove('on')));
+  after(0.03, () => f.classList.remove('on'));
 }
 
 function flashRed(): void {
   const f = $('flash');
   f.classList.add('on');
-  requestAnimationFrame(() => requestAnimationFrame(() => f.classList.remove('on')));
+  after(0.03, () => f.classList.remove('on'));
 }
 
 function handleEvents(): void {
@@ -376,6 +395,7 @@ function updateCount(dt: number): void {
 }
 
 function draw(simDt: number, realDt: number): void {
+  tickUi(realDt);
   party.update(simDt);
   party.draw();
   updateCount(simDt);
@@ -393,9 +413,11 @@ function frame(now: number): void {
     hitStop -= dt;
     scale *= 0.12;
   }
-  const simDt = manual ? 0 : advance(dt * scale);
-  draw(simDt, dt);
-  if (!manual) adaptQuality(dt);
+  // 手動で進めているとき（確認用・告知動画の撮影）は、step() の中でだけ描く
+  if (!manual) {
+    draw(advance(dt * scale), dt);
+    adaptQuality(dt);
+  }
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
@@ -559,7 +581,17 @@ window.__game = {
   manual(on: boolean) {
     manual = on;
   },
+  /** n コマ（1/60秒ずつ）進めて描く。告知動画の撮影（?promo=1）では n を秒として扱い、ヒットストップも効かせる */
   step(n = 1) {
+    if (PROMO) {
+      let scale = timeScale;
+      if (hitStop > 0) {
+        hitStop -= n;
+        scale *= 0.12;
+      }
+      draw(advance(n * scale), n);
+      return;
+    }
     for (let i = 0; i < n; i++) advance(STEP);
     draw(n * STEP, n * STEP);
   },
