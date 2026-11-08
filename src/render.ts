@@ -47,7 +47,6 @@ interface ParticleOpts {
 const BUBBLE = {
   horn: ['プァーン！', '#fff6b0', '#3a2a00'],
   act: ['', '#ff3b30', '#ffffff'],
-  defeat: ['反省中…', '#d9ecff', '#123a66'],
   early: ['まだ何も…', '#ffe0e0', '#8a0000'],
   civilian: ['ひどい！', '#ffe0e0', '#8a0000'],
   police: ['覆面パトカー！', '#2b2b2b', '#ffffff'],
@@ -191,8 +190,14 @@ export class Renderer {
         v.hopVy = big ? 8 + Math.random() * 3 : 6;
         v.rollV = (Math.random() < 0.5 ? -1 : 1) * (5 + Math.random() * 4);
         v.burnT = big ? 4.5 : 3;
-        const b = BUBBLE[e.result.kind];
-        this.setBubble(v, b[0], b[1], b[2], 99);
+        // 撃退したときは吹き出しを出さない（プレイの邪魔になるため）。ミスのときだけ理由を出す
+        if (e.result.kind !== 'defeat') {
+          const b = BUBBLE[e.result.kind];
+          this.setBubble(v, b[0], b[1], b[2], 99);
+        } else if (v.bubble) {
+          v.mesh.root.remove(v.bubble);
+          v.bubble = null;
+        }
         if (v.marker) {
           v.mesh.root.remove(v.marker);
           v.marker = null;

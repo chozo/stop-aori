@@ -1,6 +1,6 @@
 // OGP画像（public/ogp.png、1200×630）を作る
 // 使い方: npm run dev（別ターミナル）→ npm run ogp
-// 1. 決まった乱数でゲームを始め、前に割り込んだあおり車に前方ミサイルが当たって爆発した瞬間を撮る（吹き出しは消す）
+// 1. 決まった乱数でゲームを始め、前に割り込んだあおり車に前方ミサイルが当たって爆発した瞬間を撮る
 // 2. その絵を背景に、タイトル・遊び方・URLを重ねて撮る
 import { chromium } from 'playwright-core';
 import fs from 'node:fs';
@@ -65,7 +65,7 @@ await game.evaluate((n) => {
   g.tap('fireF');
   // 爆発の粒は描くたびに動くので、1コマずつ進める
   for (let i = 0; i < n; i++) g.step(1);
-  // 撃退した車の吹き出し（「反省中…」）は写さない
+  // 吹き出しが残っていれば写さない
   for (const v of g.renderer.cars.values()) if (v.bubble) v.bubble.visible = false;
   g.renderer.render(true);
 }, AFTER_FIRE);

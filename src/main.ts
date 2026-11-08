@@ -31,7 +31,6 @@ let acc = 0;
 let last = performance.now();
 let resultTimer = -1;
 const eventLog: GameEvent[] = [];
-const announced = new Set<number>();
 
 const rearEl = $('rearview');
 function resize(): void {
@@ -100,7 +99,6 @@ function start(seed = Math.floor(Math.random() * 1e9)): void {
   world = new World(seed);
   demo = false;
   renderer.reset();
-  announced.clear();
   acc = 0;
   resultTimer = -1;
   phase = 'playing';
@@ -240,18 +238,9 @@ function handleEvents(): void {
       case 'horn':
         sfx.horn(e.dist);
         break;
-      case 'aori':
-        if (!announced.has(e.carId)) {
-          announced.add(e.carId);
-          toast('あおり運転を確認！ 撃退せよ', 'aori');
-        }
-        break;
       case 'dodge':
         sfx.dodge();
         toast('かわされた！', 'warn');
-        break;
-      case 'whiff':
-        toast('外れた！', 'warn');
         break;
       case 'escape':
         toast('あおり車に逃げられた', 'info');
