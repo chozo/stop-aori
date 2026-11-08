@@ -148,8 +148,116 @@ export class Sfx {
     this.tone('sine', 784, 784, 0.7, 0.12, 0.18);
   }
 
+  /** 金管風の和音（のこぎり波を柔らかくして重ねる） */
+  private brass(freqs: number[], delay: number, dur: number, vol: number): void {
+    if (!this.ctx || !this.master) return;
+    const t = this.ctx.currentTime + delay;
+    const lp = this.ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(900, t);
+    lp.frequency.linearRampToValueAtTime(3200, t + 0.06);
+    lp.frequency.exponentialRampToValueAtTime(1400, t + dur);
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.03);
+    g.gain.setValueAtTime(vol * 0.8, t + Math.max(0.05, dur - 0.12));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    lp.connect(g).connect(this.master);
+    for (const f of freqs) {
+      for (const det of [-6, 6]) {
+        const o = this.ctx.createOscillator();
+        o.type = 'sawtooth';
+        o.frequency.value = f;
+        o.detune.value = det;
+        o.connect(lp);
+        o.start(t);
+        o.stop(t + dur + 0.05);
+      }
+    }
+  }
+
+  private drum(delay: number, big = false): void {
+    this.tone('sine', big ? 150 : 120, 40, big ? 0.5 : 0.25, big ? 0.6 : 0.4, delay);
+    this.hiss(big ? 0.35 : 0.14, big ? 0.35 : 0.22, 4000, 1500, 'bandpass', delay);
+  }
+
+  /** クリアのファンファーレと歓声 */
   clear(): void {
-    [523, 659, 784, 659, 784, 1047].forEach((f, i) => this.tone('triangle', f, f, 0.22, 0.2, i * 0.13));
+    // パッ・パッ・パッ・パーーン（C → F → G → C）
+    const b = 0.16;
+    this.brass([523, 659, 784], 0, b * 0.9, 0.09);
+    this.brass([523, 659, 784], b, b * 0.9, 0.09);
+    this.brass([523, 659, 784], b * 2, b * 0.9, 0.09);
+    this.brass([587, 698, 880], b * 3, b * 1.8, 0.1);
+    this.brass([659, 784, 988], b * 5, b * 1.8, 0.1);
+    this.brass([523, 659, 784, 1047], b * 7, 1.6, 0.12);
+    [0, b, b * 2, b * 3, b * 5].forEach((d) => this.drum(d));
+    this.drum(b * 7, true);
+    // シンバル
+    this.hiss(1.8, 0.28, 9000, 5000, 'highpass', b * 7);
+    // きらきら
+    [1568, 2093, 2637, 3136, 2637, 3136, 4186].forEach((f, i) => this.tone('sine', f, f, 0.25, 0.05, b * 7 + 0.1 + i * 0.07));
+    this.cheer(b * 6);
+  }
+
+  /** 観客の歓声（帯域を絞ったノイズを揺らして重ねる） */
+  private cheer(delay: number): void {
+    if (!this.ctx || !this.master || !this.noise) return;
+    const t = this.ctx.currentTime + delay;
+    const dur = 3.2;
+    for (const [fc, vol] of [
+      [900, 0.16],
+      [1700, 0.1],
+      [2600, 0.06],
+    ] as const) {
+      const src = this.ctx.createBufferSource();
+      src.buffer = this.noise;
+      src.loop = true;
+      src.playbackRate.value = 0.8 + Math.random() * 0.4;
+      const f = this.ctx.createBiquadFilter();
+      f.type = 'bandpass';
+      f.frequency.value = fc;
+      f.Q.value = 1.2;
+      // ざわざわ揺らす
+      const lfo = this.ctx.createOscillator();
+      lfo.frequency.value = 5 + Math.random() * 4;
+      const lfoGain = this.ctx.createGain();
+      lfoGain.gain.value = fc * 0.25;
+      lfo.connect(lfoGain).connect(f.frequency);
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + 0.35);
+      g.gain.setValueAtTime(vol, t + 1.2);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      src.connect(f).connect(g).connect(this.master);
+      src.start(t);
+      src.stop(t + dur + 0.1);
+      lfo.start(t);
+      lfo.stop(t + dur + 0.1);
+    }
+    // 指笛
+    this.tone('sine', 1800, 2600, 0.35, 0.05, delay + 0.4);
+    this.tone('sine', 2600, 1700, 0.45, 0.05, delay + 0.8);
+  }
+
+  /** 花火が開く音 */
+  pop(): void {
+    this.hiss(0.08, 0.3, 5000, 2500, 'highpass');
+    this.tone('sine', 300, 60, 0.3, 0.18);
+    for (let i = 0; i < 6; i++) this.hiss(0.04, 0.1, 6000, 4000, 'bandpass', 0.2 + Math.random() * 0.5);
+  }
+
+  /** 台数を数え上げるときの音。i が進むほど少し高くする */
+  tick(i: number): void {
+    const f = 880 * Math.pow(2, Math.min(i, 24) / 24);
+    this.tone('square', f, f, 0.05, 0.05);
+  }
+
+  /** 数え終わり・ランクのハンコ */
+  stamp(): void {
+    this.drum(0, true);
+    this.brass([523, 659, 784, 1047], 0, 0.9, 0.1);
+    this.hiss(1.2, 0.2, 9000, 5000, 'highpass');
   }
 
   over(): void {

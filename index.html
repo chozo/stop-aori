@@ -52,6 +52,10 @@
           </div>
           <div id="flash"></div>
           <div id="boom"></div>
+          <div id="goal" hidden>
+            <div class="goal-sub">東名高速 325.5km 完走</div>
+            <div class="goal-main">名古屋IC 到着！</div>
+          </div>
 
           <div id="keys" class="keys">
             <span><kbd>←</kbd><kbd>→</kbd> 車線変更</span>
@@ -102,6 +106,7 @@
             <p class="kicker" id="rKicker">名古屋IC 到着</p>
             <h2 id="rTitle">クリア！</h2>
             <p id="rReason"></p>
+            <p id="rCount" hidden>退治したあおり車両は <b id="rCountNum">0</b> 台です！</p>
             <dl class="stats">
               <div><dt>撃退</dt><dd id="rKills">0</dd></div>
               <div><dt>ミス</dt><dd id="rMiss">0</dd></div>
@@ -115,6 +120,7 @@
             </div>
           </div>
         </section>
+        <canvas id="confetti" aria-hidden="true"></canvas>
 
         <div id="paused" class="screen" hidden>
           <div class="card small"><h2>一時停止中</h2><button id="resumeBtn" class="primary">つづける</button></div>

@@ -5,6 +5,7 @@ import { Renderer } from './render';
 import { Sfx } from './audio';
 import { ROUTE, kmRemaining, nextIcIndex, TOTAL_KM } from './route';
 import { rank } from './rules';
+import { Celebration } from './celebrate';
 import type { GameEvent } from './types';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -16,6 +17,9 @@ const pausedEl = $('paused');
 
 const renderer = new Renderer($<HTMLCanvasElement>('view'));
 const sfx = new Sfx();
+const party = new Celebration($<HTMLCanvasElement>('confetti'));
+party.onPop = () => sfx.pop();
+const goalEl = $('goal');
 
 type Phase = 'title' | 'playing' | 'paused' | 'result';
 let phase: Phase = 'title';
@@ -42,6 +46,7 @@ function resize(): void {
       ? { x: (m.left + bw - r.left) / w, y: (m.top + bw - r.top) / h, w: (m.width - bw * 2) / w, h: (m.height - bw * 2) / h }
       : null;
   renderer.resize(w, h, rear);
+  if (party.active) party.resize();
 }
 const ro = new ResizeObserver(resize);
 ro.observe(gameEl);
@@ -82,7 +87,16 @@ const vibrate = (ms: number | number[]) => {
 };
 
 // ---- 画面の切り替え ----
+/** クリアの演出を片付ける */
+function endParty(): void {
+  party.stop();
+  goalEl.hidden = true;
+  resultEl.classList.remove('clear');
+  count = null;
+}
+
 function start(seed = Math.floor(Math.random() * 1e9)): void {
+  endParty();
   world = new World(seed);
   demo = false;
   renderer.reset();
@@ -100,6 +114,7 @@ function start(seed = Math.floor(Math.random() * 1e9)): void {
 }
 
 function toTitle(): void {
+  endParty();
   world = new World(12345);
   demo = true;
   renderer.reset();
@@ -126,8 +141,19 @@ function setPaused(on: boolean): void {
 function showResult(): void {
   phase = 'result';
   const clear = world.state === 'clear';
-  $('rKicker').textContent = clear ? '名古屋IC 到着' : `${ROUTE[Math.max(0, world.nextIc - 1)].name} IC 付近でリタイア`;
-  $('rTitle').textContent = clear ? 'クリア！' : 'ゲームオーバー';
+  goalEl.hidden = true;
+  resultEl.classList.toggle('clear', clear);
+  $('rKicker').textContent = clear ? '東名高速 東京IC → 名古屋IC 完走' : `${ROUTE[Math.max(0, world.nextIc - 1)].name} IC 付近でリタイア`;
+  // 折り返すときは「無事 名古屋に／到着しました！」で区切る
+  if (clear) $('rTitle').innerHTML = '<span class="nw">無事 名古屋に</span><span class="nw">到着しました！</span>';
+  else $('rTitle').textContent = 'ゲームオーバー';
+  $('rCount').hidden = !clear;
+  const num = $('rCountNum');
+  num.textContent = '0';
+  num.className = '';
+  $('rRank').classList.remove('stamped');
+  // 退治した台数を少し間をおいてから数え上げる
+  count = clear ? { shown: 0, target: world.defeated, wait: 0.7, every: Math.min(0.16, Math.max(0.05, 1.5 / Math.max(1, world.defeated))) } : null;
   $('rReason').textContent = clear ? '' : `最後のミス：${world.lastMissText}`;
   $('rKills').textContent = String(world.defeated);
   $('rMiss').textContent = String(world.misses);
@@ -236,7 +262,9 @@ function handleEvents(): void {
         break;
       case 'clear':
         sfx.clear();
-        resultTimer = 2.2;
+        party.start();
+        goalEl.hidden = false;
+        resultTimer = 2.8;
         break;
       case 'over':
         sfx.over();
@@ -330,7 +358,38 @@ function advance(dt: number): number {
   return n * STEP;
 }
 
+// 結果画面で退治した台数を数え上げる
+let count: { shown: number; target: number; wait: number; every: number } | null = null;
+function updateCount(dt: number): void {
+  if (!count) return;
+  count.wait -= dt;
+  if (count.wait > 0) return;
+  const num = $('rCountNum');
+  if (count.shown < count.target) {
+    count.shown++;
+    count.wait = count.every;
+    num.textContent = String(count.shown);
+    num.classList.remove('bump');
+    void num.offsetWidth; // アニメーションをやり直すため
+    num.classList.add('bump');
+    if (count.shown < count.target) {
+      sfx.tick(count.shown);
+      return;
+    }
+  }
+  // 数え終わり: ジャーン、紙吹雪をもう一度、ランクのハンコ
+  num.classList.remove('bump');
+  num.classList.add('done');
+  $('rRank').classList.add('stamped');
+  sfx.stamp();
+  party.finale();
+  count = null;
+}
+
 function draw(simDt: number, realDt: number): void {
+  party.update(simDt);
+  party.draw();
+  updateCount(simDt);
   renderer.sync(world, simDt);
   renderer.render(phase !== 'title');
   updateHud(realDt);

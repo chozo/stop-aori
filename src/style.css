@@ -634,3 +634,173 @@ button {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* ---- クリアの演出 ---- */
+#confetti {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+}
+#goal {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 30%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3em;
+  pointer-events: none;
+  text-align: center;
+  padding: 0 12px;
+}
+#goal[hidden] {
+  display: none;
+}
+.goal-sub {
+  font-size: clamp(16px, 4vmin, 28px);
+  font-weight: 800;
+  color: #fff;
+  background: #0f6b3a;
+  border: 3px solid #fff;
+  border-radius: 8px;
+  padding: 0.15em 0.9em;
+  animation: goal-in 0.5s 0.15s both cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+.goal-main {
+  font-size: clamp(40px, 12vmin, 104px);
+  font-weight: 900;
+  line-height: 1.1;
+  color: #ffd84a;
+  text-shadow:
+    0 0.06em 0 #a8331a,
+    0 0.12em 0.3em rgba(0, 0, 0, 0.5);
+  -webkit-text-stroke: 0.02em #6b1d0a;
+  animation:
+    goal-pop 0.7s both cubic-bezier(0.2, 1.8, 0.35, 1),
+    goal-pulse 1s 0.7s ease-in-out infinite;
+}
+@keyframes goal-pop {
+  from {
+    transform: scale(3) rotate(-8deg);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) rotate(-3deg);
+    opacity: 1;
+  }
+}
+@keyframes goal-pulse {
+  0%,
+  100% {
+    transform: scale(1) rotate(-3deg);
+  }
+  50% {
+    transform: scale(1.06) rotate(-3deg);
+  }
+}
+@keyframes goal-in {
+  from {
+    transform: translateY(0.6em) scale(0.6);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* クリアの結果画面 */
+#result.clear .card {
+  border: 2px solid #ffd84a;
+  box-shadow:
+    0 0 0 4px rgba(255, 216, 74, 0.25),
+    0 10px 40px rgba(0, 0, 0, 0.5);
+  animation: card-in 0.55s both cubic-bezier(0.2, 1.5, 0.4, 1);
+}
+#result.clear #rTitle {
+  font-size: clamp(24px, 6.4vmin, 44px);
+  line-height: 1.25;
+  text-shadow: 0 3px 0 #a8331a;
+}
+#rCount {
+  margin: 0.1em 0 0.3em;
+  font-size: clamp(17px, 4.2vmin, 28px);
+  font-weight: 800;
+}
+#rCount[hidden] {
+  display: none;
+}
+#rCountNum {
+  display: inline-block;
+  min-width: 1.6em;
+  font-size: 2em;
+  line-height: 1;
+  color: #ff6a4d;
+  text-shadow: 0 3px 0 #6b1d0a;
+}
+#rCountNum.bump {
+  animation: num-bump 0.12s ease-out;
+}
+#rCountNum.done {
+  animation: num-done 0.5s cubic-bezier(0.2, 1.8, 0.4, 1);
+}
+#result.clear #rRank {
+  visibility: hidden;
+}
+#result.clear #rRank.stamped {
+  visibility: visible;
+  animation: stamp 0.45s both cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+@keyframes card-in {
+  from {
+    transform: scale(0.6) translateY(10%);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes num-bump {
+  from {
+    transform: scale(1.35);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@keyframes num-done {
+  0% {
+    transform: scale(1.8) rotate(-6deg);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes stamp {
+  from {
+    transform: scale(3.2) rotate(-18deg);
+    opacity: 0;
+  }
+  to {
+    transform: rotate(-6deg);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .goal-main,
+  .goal-sub,
+  #result.clear .card,
+  #rCountNum.bump,
+  #rCountNum.done,
+  #result.clear #rRank.stamped {
+    animation: none;
+  }
+}
+#rTitle .nw {
+  display: inline-block;
+}

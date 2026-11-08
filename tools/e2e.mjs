@@ -119,10 +119,28 @@ async function run(viewport, label, mobile = false) {
     const w = window.__game.world();
     w.misses = 0;
     w.player.z = 5400 - 30;
-    window.__game.step(200);
+    w.player.speed = 30;
+    w.defeated = 12;
+    const g = window.__game;
+    for (let i = 0; i < 300 && w.state !== 'clear'; i++) g.step(1);
+    for (let i = 0; i < 30; i++) g.step(2); // 紙吹雪が広がるまで1コマずつ描く
   });
-  const sc = await page.evaluate(() => window.__game.state());
+  const goal = await page.evaluate(() => !document.getElementById('goal').hidden);
+  check(`${label}: ゴールで「名古屋IC 到着！」と紙吹雪`, goal);
+  await page.screenshot({ path: `${OUT}/${label}-6a-goal.png` });
+  // 結果画面で、退治した台数を数え上げてランクのハンコを押す
+  await page.evaluate(() => {
+    const g = window.__game;
+    for (let i = 0; i < 150; i++) g.step(2);
+  });
+  const sc = await page.evaluate(() => ({
+    ...window.__game.state(),
+    title: document.getElementById('rTitle').textContent,
+    count: document.getElementById('rCount').textContent.replace(/\s+/g, ''),
+    stamped: document.getElementById('rRank').classList.contains('stamped'),
+  }));
   check(`${label}: クリア`, sc.state === 'clear' && sc.phase === 'result');
+  check(`${label}: 到着と退治台数の表示`, sc.title.includes('名古屋に到着') && sc.count === '退治したあおり車両は12台です！' && sc.stamped, `${sc.title} / ${sc.count}`);
   await page.screenshot({ path: `${OUT}/${label}-6-clear.png` });
 
   // もう一度 → ゲームオーバー
